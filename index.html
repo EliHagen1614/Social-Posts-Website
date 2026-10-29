@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Local Social Network</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; color: #1c1e21; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        header { background-color: #1877f2; color: white; width: 100%; max-width: 600px; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { width: 100%; max-width: 600px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-bottom: 15px; font-size: 1.2rem; color: #65676b; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 1rem; }
+        textarea { resize: none; height: 80px; }
+        button { background-color: #1877f2; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
+        button:hover { background-color: #115cbf; }
+        .post { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .username { font-weight: bold; color: #1c1e21; }
+        .timestamp { font-size: 0.85rem; color: #65676b; }
+        .post-content { font-size: 1rem; line-height: 1.5; word-wrap: break-word; }
+        .post-actions { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e4e6eb; }
+        .like-btn { background: none; color: #65676b; width: auto; padding: 5px 10px; display: inline-flex; align-items: center; gap: 5px; }
+        .like-btn:hover { background-color: #f2f2f2; color: #1877f2; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Chromebook Social</h1>
+    </header>
+
+    <div class="container">
+        <!-- User Profile Setup -->
+        <div class="card">
+            <h2>👤 Profile Settings</h2>
+            <input type="text" id="usernameInput" placeholder="Enter your display name..." value="Anonymous User">
+        </div>
+
+        <!-- Create Post -->
+        <div class="card">
+            <h2>✍️ Create a Post</h2>
+            <textarea id="postInput" placeholder="What's on your mind?"></textarea>
+            <button onclick="createPost()">Publish Post</button>
+        </div>
+
+        <!-- Feed Grid -->
+        <h2>🌎 Activity Feed</h2>
+        <div id="feed"></div>
+    </div>
+
+    <script>
+        // Load initial posts from browser storage, or default to an empty list
+        let posts = JSON.parse(localStorage.getItem('local_social_posts')) || [];
+
+        // Function to display all saved posts on the screen
+        function renderFeed() {
+            const feedElement = document.getElementById('feed');
+            feedElement.innerHTML = '';
+
+            if (posts.length === 0) {
+                feedElement.innerHTML = '<p style="text-align:center; color:#65676b; margin-top:20px;">No posts yet. Be the first to say hello!</p>';
+                return;
+            }
+
+            posts.forEach((post, index) => {
+                const postDiv = document.createElement('div');
+                postDiv.className = 'post';
+                postDiv.innerHTML = `
+                    <div class="post-header">
+                        <span class="username">${escapeHTML(post.author)}</span>
+                        <span class="timestamp">${post.time}</span>
+                    </div>
+                    <div class="post-content">${escapeHTML(post.content)}</div>
+                    <div class="post-actions">
+                        <button class="like-btn" onclick="likePost(${index})">👍 Likes (${post.likes || 0})</button>
+                    </div>
+                `;
+                feedElement.appendChild(postDiv);
+            });
+        }
+
+        // Function to handle creating a brand new post
+        function createPost() {
+            const username = document.getElementById('usernameInput').value.trim() || 'Anonymous User';
+            const content = document.getElementById('postInput').value.trim();
+
+            if (!content) {
+                alert('Please type some text before publishing your post!');
+                return;
+            }
+
+            const newPost = {
+                author: username,
+                content: content,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+                likes: 0
+            };
+
+            posts.unshift(newPost); // Adds new post to the top of the feed array
+            saveAndRefresh();
+            document.getElementById('postInput').value = ''; // Clears text box
+        }
+
+        // Function to handle clicking the like button
+        function likePost(index) {
+            posts[index].likes = (posts[index].likes || 0) + 1;
+            saveAndRefresh();
+        }
+
+        // Helper function to update memory storage and redraw the UI screen
+        function saveAndRefresh() {
+            localStorage.setItem('local_social_posts', JSON.stringify(posts));
+            renderFeed();
+        }
+
+        // Security feature to clean user inputs and prevent code injection errors
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // Automatically load existing data when user opens or refreshes the page
+        renderFeed();
+    </script>
+</body>
+</html>
